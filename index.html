@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>English Flashcards - Modules 1 & 2</title>
+<style>
+  :root {
+    --primary: #4a90e2;
+    --secondary: #50e3c2;
+    --bg: #f5f7fa;
+    --text: #333;
+    --vk-blue: #0077FF;
+    --brand-purple: #8E44AD;
+    --brand-pink: #E91E63;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+  body {
+    background-color: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--text);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Рекламный фон (водяной знак) */
+  body::before {
+    content: "МЯГКАЯ МАТЕМАТИКА • ПОДГОТОВКА К ОГЭ/ЕГЭ • ОЛИМПИАДЫ";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 60px;
+    font-weight: 900;
+    color: rgba(74, 144, 226, 0.04); /* Очень прозрачный цвет */
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 0;
+    letter-spacing: 5px;
+    user-select: none;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .header h1 { color: var(--primary); font-size: 24px; margin-bottom: 5px; }
+  .header p { color: #777; font-size: 14px; }
+
+  /* Контейнер для 3D эффекта */
+  .card-container {
+    perspective: 1000px;
+    width: 100%;
+    max-width: 380px;
+    height: 480px;
+    position: relative;
+    margin-bottom: 20px;
+    z-index: 2;
+  }
+
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    cursor: pointer;
+  }
+
+  .card.flipped {
+    transform: rotateY(180deg);
+  }
+
+  /* Общие стили для сторон */
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background-color: #fff; /* Чтобы фон не просвечивал сквозь карточку */
+  }
+
+  /* Лицевая сторона */
+  .card-front {
+    background: linear-gradient(135deg, #ffffff, #e0f2fe);
+    border: 2px solid #bae6fd;
+  }
+
+  .word { font-size: 32px; font-weight: bold; color: var(--primary); margin-bottom: 10px; }
+  .transcription { font-size: 18px; color: #777; margin-bottom: 20px; font-family: 'Times New Roman', serif; }
+  .translation { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 30px; }
+  
+  .audio-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.4);
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .audio-btn:hover { transform: scale(1.1); background: #357abd; }
+  .hint { position: absolute; bottom: 15px; font-size: 12px; color: #999; }
+
+  /* Обратная сторона */
+  .card-back {
+    background: linear-gradient(135deg, #ffffff, #fdf4ff);
+    border: 2px solid #f5d0fe;
+    transform: rotateY(180deg);
+    justify-content: flex-start;
+    overflow-y: auto;
+    text-align: left;
+    align-items: stretch;
+  }
+
+  .rule-title { font-size: 14px; text-transform: uppercase; color: #d946ef; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #f5d0fe; padding-bottom: 5px; }
+  .example { font-size: 18px; font-weight: bold; color: #1e293b; margin-bottom: 10px; line-height: 1.4; }
+  .example-ru { font-size: 15px; color: #64748b; margin-bottom: 20px; font-style: italic; }
+  .explanation { font-size: 14px; color: #334155; background: #f1f5f9; padding: 15px; border-radius: 10px; line-height: 1.5; }
+
+  /* Навигация */
+  .navigation {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 2;
+  }
+  .nav-btn {
+    background: white;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .nav-btn:hover:not(:disabled) { background: var(--primary); color: white; }
+  .nav-btn:disabled { border-color: #ccc; color: #ccc; cursor: not-allowed; }
+  
+  .counter { font-weight: bold; color: #555; font-size: 16px; }
+
+  /* Скроллбар для обратной стороны */
+  .card-back::-webkit-scrollbar { width: 6px; }
+  .card-back::-webkit-scrollbar-track { background: transparent; }
+  .card-back::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+  /* РЕКЛАМНЫЙ БЛОК (Виджет) */
+  .promo-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 15px;
+    max-width: 280px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.3s;
+  }
+  .promo-widget:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+  }
+  .promo-title {
+    font-size: 15px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--brand-purple), var(--brand-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 2px;
+  }
+  .promo-text {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.4;
+    margin-bottom: 5px;
+  }
+  .promo-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .promo-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background 0.2s;
+    text-align: center;
+  }
+  .btn-vk {
+    background-color: var(--vk-blue);
+    color: white;
+  }
+  .btn-vk:hover { background-color: #005bb5; }
+  .btn-msg {
+    background-color: #f1f5f9;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+  }
+  .btn-msg:hover { background-color: #e2e8f0; }
+
+  /* Адаптивность для мобильных устройств */
+  @media (max-width: 768px) {
+    body::before { font-size: 30px; } /* Уменьшаем фон на телефонах */
+    
+    .promo-widget {
+      position: relative;
+      bottom: auto;
+      right: auto;
+      margin-top: 20px;
+      max-width: 100%;
+      width: 100%;
+      border-radius: 12px;
+      background: #fff;
+    }
+    .promo-buttons {
+      flex-direction: row; /* Кнопки в ряд на мобильном */
+    }
+    .promo-btn {
+      flex: 1;
+      font-size: 11px;
+      padding: 10px 5px;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <!-- Фоновая реклама генерируется через CSS (body::before) -->
+
+  <div class="header">
+    <h1>English Flashcards</h1>
+    <p>Модули 1 и 2: Лексика + Грамматика</p>
+  </div>
+
+  <div class="card-container">
+    <div class="card" id="flashcard" onclick="flipCard()">
+      
+      <!-- ЛИЦЕВАЯ СТОРОНА -->
+      <div class="card-face card-front">
+        <div class="word" id="word">friendly</div>
+        <div class="transcription" id="transcription">/ˈfrendli/</div>
+        <div class="translation" id="translation">дружелюбный</div>
+        <button class="audio-btn" onclick="speakWord(event)" title="Прослушать">🔊</button>
+        <div class="hint">Нажмите на карточку, чтобы перевернуть</div>
+      </div>
+
+      <!-- ОБРАТНАЯ СТОРОНА -->
+      <div class="card-face card-back">
+        <div class="rule-title" id="rule">Грамматика</div>
+        <div class="example" id="example">...</div>
+        <div class="example-ru" id="example-ru">...</div>
+        <div class="explanation" id="explanation">...</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="navigation">
+    <button class="nav-btn" id="prev-btn" onclick="prevCard()">← Назад</button>
+    <span class="counter" id="counter">1 / 8</span>
+    <button class="nav-btn" id="next-btn" onclick="nextCard()">Вперед →</button>
+  </div>
+
+  <!-- РЕКЛАМНЫЙ БЛОК (Виджет) -->
+  <div class="promo-widget">
+    <div class="promo-title">🚀 Мягкая математика</div>
+    <div class="promo-text">Подготовка к ОГЭ/ЕГЭ и олимпиадам без стресса. Развиваем логику и soft skills!</div>
+    <div class="promo-buttons">
+      <a href="https://vk.com/smartskillsmaria" target="_blank" class="promo-btn btn-vk">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13.162 18.994c.609 0 .858-.406.851-.915-.031-1.917.714-2.949 2.059-1.604 1.488 1.488 1.796 2.519 3.603 2.519h3.2c.808 0 1.126-.26 1.126-.668 0-.863-1.421-2.386-2.625-3.504-1.686-1.565-1.765-1.602-.313-3.486 1.801-2.339 4.157-5.336 2.073-5.336h-3.981c-.772 0-.828.435-1.103 1.083-.995 2.347-2.886 5.387-3.604 4.922-.751-.485-.407-2.406-.35-5.261.015-.754.011-1.271-1.141-1.539-.814-.18-1.775-.283-2.804-.283-1.865 0-3.429.126-4.525.41-1.074.276-1.45.875-1.45 1.424 0 .587.449.765 1.043.928.755.207.985.505.985 1.271 0 1.134-.211 3.876-.781 4.557-.555.664-1.401.122-2.389-1.422C4.804 11.673 3.701 8.778 3.701 7.932c0-.555.354-.94 1.148-.94h4.146c.929 0 1.013.55 1.228 1.249.619 2.008 1.666 4.674 2.528 5.868.707.978 1.244.8 1.244-.219 0-.513-.113-2.786-.113-3.995 0-1.386.331-2.014 1.145-2.014h2.568c.651 0 .849.372.849.998 0 .853-.419 2.078-.949 3.285-.42.954-.51 1.386.146 2.115 1.142 1.271 2.63 3.094 2.63 4.225 0 .595-.354.984-1.22.984h-2.826z"/></svg>
+        Подписаться на группу
+      </a>
+      <a href="https://vk.com/im/convo/-229273902?entrypoint=community_page&tab=all" target="_blank" class="promo-btn btn-msg">
+        ✉️ Написать Марии Абрамовой
+      </a>
+    </div>
+  </div>
+
+<script>
+  // База данных карточек (на основе Модулей 1 и 2)
+  const cards = [
+    {
+      word: "friendly",
+      transcription: "/ˈfrendli/",
+      translation: "дружелюбный",
+      rule: "Present Simple (глагол to be)",
+      example: "My best friend is very friendly.",
+      exampleRu: "Мой лучший друг очень дружелюбный.",
+      explanation: "Используем Present Simple для описания постоянной характеристики или качества человека. Глагол to be (is) согласуется с подлежащим в 3-м лице единственного числа."
+    },
+    {
+      word: "plump",
+      transcription: "/plʌmp/",
+      translation: "полный, пухлый",
+      rule: "Present Simple (Описание внешности)",
+      example: "The cat is plump and fluffy.",
+      exampleRu: "Кот пухлый и пушистый.",
+      explanation: "Прилагательные, описывающие внешность, используются с глаголом to be в Present Simple, так как это постоянный признак."
+    },
+    {
+      word: "dive",
+      transcription: "/daɪv/",
+      translation: "нырять",
+      rule: "Present Continuous",
+      example: "Look! The boy is diving into the pool right now.",
+      exampleRu: "Смотри! Мальчик ныряет в бассейн прямо сейчас.",
+      explanation: "Действие происходит в момент речи (сигналы: Look!, right now). Формула Present Continuous: am/is/are + глагол с окончанием -ing."
+    },
+    {
+      word: "ski",
+      transcription: "/skiː/",
+      translation: "кататься на лыжах",
+      rule: "Present Continuous",
+      example: "They are skiing in the mountains now.",
+      exampleRu: "Они катаются на лыжах в горах сейчас.",
+      explanation: "Процесс происходит прямо сейчас. Во множественном числе (They) используем вспомогательный глагол are + skiing."
+    },
+    {
+      word: "next to",
+      transcription: "/nekst tu/",
+      translation: "рядом с",
+      rule: "Предлоги места (Prepositions of place)",
+      example: "The post office is next to the hospital.",
+      exampleRu: "Почтовое отделение находится рядом с больницей.",
+      explanation: "Предлог места next to указывает на то, что объекты находятся очень близко, по соседству друг с другом."
+    },
+    {
+      word: "greengrocer",
+      transcription: "/ˈɡriːnɡrəʊsə/",
+      translation: "продавец овощей и фруктов",
+      rule: "Present Simple (3-е лицо, ед. число)",
+      example: "The greengrocer works in the shop every day.",
+      exampleRu: "Продавец овощей работает в магазине каждый день.",
+      explanation: "Регулярное действие (every day). Подлежащее The greengrocer (он) — 3-е лицо ед. число, поэтому к глаголу work добавляется окончание -s (works)."
+    },
+    {
+      word: "waiter",
+      transcription: "/ˈweɪtə/",
+      translation: "официант",
+      rule: "Present Simple (Вопросы)",
+      example: "Does the waiter work here?",
+      exampleRu: "Официант здесь работает?",
+      explanation: "Вопросительное предложение в Present Simple с подлежащим в 3-м лице (waiter) начинается со вспомогательного глагола Does, а смысловой глагол work теряет окончание -s."
+    },
+    {
+      word: "zoo keeper",
+      transcription: "/zuː ˈkiːpə/",
+      translation: "смотритель зоопарка",
+      rule: "Present Simple (Отрицание)",
+      example: "The zoo keeper doesn't feed the lions at night.",
+      exampleRu: "Смотритель зоопарка не кормит львов ночью.",
+      explanation: "Отрицание в Present Simple для 3-го лица строится с помощью doesn't (does not) + глагол в начальной форме. Действие регулярное (at night)."
+    }
+  ];
+
+  let currentIndex = 0;
+  const cardElement = document.getElementById('flashcard');
+
+  // Функция переворота
+  function flipCard() {
+    cardElement.classList.toggle('flipped');
+  }
+
+  // Функция озвучки (Web Speech API)
+  function speakWord(event) {
+    event.stopPropagation(); 
+    
+    const word = cards[currentIndex].word;
+    
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US'; 
+      utterance.rate = 0.9; 
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Ваш браузер не поддерживает озвучку.");
+    }
+  }
+
+  // Обновление контента на карточке
+  function updateCard() {
+    cardElement.classList.remove('flipped');
+
+    setTimeout(() => {
+      const data = cards[currentIndex];
+      
+      // Лицевая сторона
+      document.getElementById('word').textContent = data.word;
+      document.getElementById('transcription').textContent = data.transcription;
+      document.getElementById('translation').textContent = data.translation;
+      
+      // Обратная сторона
+      document.getElementById('rule').textContent = data.rule;
+      document.getElementById('example').textContent = data.example;
+      document.getElementById('example-ru').textContent = data.exampleRu;
+      document.getElementById('explanation').textContent = data.explanation;
+
+      // Счетчик
+      document.getElementById('counter').textContent = `${currentIndex + 1} / ${cards.length}`;
+
+      // Блокировка кнопок
+      document.getElementById('prev-btn').disabled = currentIndex === 0;
+      document.getElementById('next-btn').disabled = currentIndex === cards.length - 1;
+      
+    }, 150); 
+  }
+
+  function nextCard() {
+    if (currentIndex < cards.length - 1) {
+      currentIndex++;
+      updateCard();
+    }
+  }
+
+  function prevCard() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      updateCard();
+    }
+  }
+
+  // Инициализация при загрузке
+  updateCard();
+
+</script>
+</body>
+</html>
